@@ -4,18 +4,57 @@
 
 async function createMatchCard(match) {
 
-    const teamOne =
-        await getTeam(match.challenger_team_id);
+    if (!match || !match.id) {
+        console.error(
+            "CREATE MATCH CARD ERROR: Invalid match object",
+            match
+        );
 
-    const teamTwo =
-        await getTeam(match.challenged_team_id);
+        return;
+    }
 
-    const teamOnePlayers =
-        await getPlayers(match.challenger_team_id);
 
-    const teamTwoPlayers =
-        await getPlayers(match.challenged_team_id);
+    // =====================================================
+    // LOAD TEAM / PLAYER DATA SAFELY
+    // =====================================================
 
+    let teamOne = null;
+    let teamTwo = null;
+    let teamOnePlayers = "";
+    let teamTwoPlayers = "";
+
+    try {
+
+        [
+            teamOne,
+            teamTwo,
+            teamOnePlayers,
+            teamTwoPlayers
+        ] = await Promise.all([
+            getTeam(match.challenger_team_id),
+            getTeam(match.challenged_team_id),
+            getPlayers(match.challenger_team_id),
+            getPlayers(match.challenged_team_id)
+        ]);
+
+    } catch (error) {
+
+        console.error(
+            "ERROR LOADING MATCH DATA:",
+            error
+        );
+
+        teamOnePlayers =
+            '<div class="message error">Unable to load team players.</div>';
+
+        teamTwoPlayers =
+            '<div class="message error">Unable to load team players.</div>';
+    }
+
+
+    // =====================================================
+    // CREATE MATCH CARD
+    // =====================================================
 
     const matchCard =
         document.createElement("div");
@@ -25,25 +64,36 @@ async function createMatchCard(match) {
 
 
     // =====================================================
-    // DETERMINE THIS TEAM'S DISPUTE ACKNOWLEDGEMENT
+    // DETERMINE THIS TEAM
     // =====================================================
 
     const isTeamOne =
-        currentTeamId === match.challenger_team_id;
+        String(currentTeamId) ===
+        String(match.challenger_team_id);
 
     const isTeamTwo =
-        currentTeamId === match.challenged_team_id;
+        String(currentTeamId) ===
+        String(match.challenged_team_id);
 
+
+    const validCurrentTeam =
+        isTeamOne ||
+        isTeamTwo;
+
+
+    // =====================================================
+    // DETERMINE DISPUTE ACKNOWLEDGEMENT
+    // =====================================================
 
     const alreadyAcknowledged =
         (
             isTeamOne &&
-            match.challenger_dispute_ack
+            Boolean(match.challenger_dispute_ack)
         )
         ||
         (
             isTeamTwo &&
-            match.challenged_dispute_ack
+            Boolean(match.challenged_dispute_ack)
         );
 
 
@@ -54,43 +104,62 @@ async function createMatchCard(match) {
     let resultHTML = "";
 
 
-    if (
-        match.result_disputed &&
-        !alreadyAcknowledged
-    ) {
+    if (match.result_disputed) {
 
-        // ---------------------------------------------
-        // DISAGREEMENT POPUP
-        // ---------------------------------------------
+        // -------------------------------------------------
+        // DISPUTED MATCH
+        // -------------------------------------------------
 
-        resultHTML = `
+        if (!alreadyAcknowledged) {
 
-            <div class="match-result-section">
+            resultHTML = `
 
-                <div class="result-dispute">
+                <div class="match-result-section">
 
-                    <span>
-                        Both teams do not agree on the outcome.
-                    </span>
+                    <div class="result-dispute">
 
-                    <button
-                        class="result-ok-button"
-                        data-id="${match.id}"
-                    >
-                        OK
-                    </button>
+                        <span>
+                            Both teams do not agree on the outcome.
+                        </span>
+
+                        <button
+                            type="button"
+                            class="result-ok-button"
+                            data-id="${escapeHTML(match.id)}"
+                        >
+                            OK
+                        </button>
+
+                    </div>
 
                 </div>
 
-            </div>
+            `;
 
-        `;
+        } else {
 
-    } else {
+            // The current team has already acknowledged.
+            // Do not immediately show the voting controls again.
 
-        // ---------------------------------------------
-        // VOTING SECTION
-        // ---------------------------------------------
+            resultHTML = `
+
+                <div class="match-result-section">
+
+                    <div class="message success">
+                        Dispute acknowledged. Waiting for the match status to update.
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+
+    } else if (validCurrentTeam) {
+
+        // -------------------------------------------------
+        // NORMAL VOTING
+        // -------------------------------------------------
 
         resultHTML = `
 
@@ -104,9 +173,10 @@ async function createMatchCard(match) {
                 <div class="winner-buttons">
 
                     <button
+                        type="button"
                         class="team-one-winner"
-                        data-match-id="${match.id}"
-                        data-team-id="${match.challenger_team_id}"
+                        data-match-id="${escapeHTML(match.id)}"
+                        data-team-id="${escapeHTML(match.challenger_team_id)}"
                     >
                         ${escapeHTML(
                             teamOne?.name ||
@@ -116,9 +186,10 @@ async function createMatchCard(match) {
 
 
                     <button
+                        type="button"
                         class="team-two-winner"
-                        data-match-id="${match.id}"
-                        data-team-id="${match.challenged_team_id}"
+                        data-match-id="${escapeHTML(match.id)}"
+                        data-team-id="${escapeHTML(match.challenged_team_id)}"
                     >
                         ${escapeHTML(
                             teamTwo?.name ||
@@ -137,7 +208,59 @@ async function createMatchCard(match) {
 
         `;
 
+    } else {
+
+        // -------------------------------------------------
+        // INVALID TEAM STATE
+        // -------------------------------------------------
+
+        resultHTML = `
+
+            <div class="match-result-section">
+
+                <div class="message error">
+                    Your team could not be verified for this match.
+                </div>
+
+            </div>
+
+        `;
+
     }
+
+
+    // =====================================================
+    // DETERMINE WHETHER MATCH CAN BE CANCELLED
+    // =====================================================
+
+    const matchIsInResultState =
+        Boolean(match.result_disputed);
+
+
+    const showCancelButton =
+        !matchIsInResultState;
+
+
+    // =====================================================
+    // CANCEL BUTTON HTML
+    // =====================================================
+
+    const cancelButtonHTML =
+        showCancelButton
+            ? `
+
+                <button
+                    type="button"
+                    class="danger-button cancel-match-button"
+                    data-id="${escapeHTML(match.id)}"
+                >
+                    Cancel Match
+                </button>
+
+                <div class="message cancel-message"></div>
+
+              `
+            : "";
 
 
     // =====================================================
@@ -159,9 +282,7 @@ async function createMatchCard(match) {
                 </h3>
 
                 <div class="match-players">
-
                     ${teamOnePlayers}
-
                 </div>
 
             </div>
@@ -182,9 +303,7 @@ async function createMatchCard(match) {
                 </h3>
 
                 <div class="match-players">
-
                     ${teamTwoPlayers}
-
                 </div>
 
             </div>
@@ -201,8 +320,10 @@ async function createMatchCard(match) {
                 </span>
 
                 <strong>
-                    ${formatDate(
-                        match.match_date
+                    ${escapeHTML(
+                        formatDate(
+                            match.match_date
+                        )
                     )}
                 </strong>
 
@@ -216,8 +337,10 @@ async function createMatchCard(match) {
                 </span>
 
                 <strong>
-                    ${formatDisplayTime(
-                        match.match_time
+                    ${escapeHTML(
+                        formatDisplayTime(
+                            match.match_time
+                        )
                     )}
                 </strong>
 
@@ -226,15 +349,7 @@ async function createMatchCard(match) {
         </div>
 
 
-        <button
-            class="danger-button cancel-match-button"
-            data-id="${match.id}"
-        >
-            Cancel Match
-        </button>
-
-
-        <div class="message cancel-message"></div>
+        ${cancelButtonHTML}
 
 
         ${resultHTML}
@@ -245,6 +360,16 @@ async function createMatchCard(match) {
     // =====================================================
     // ADD CARD TO PAGE
     // =====================================================
+
+    if (!yourMatches) {
+
+        console.error(
+            "CREATE MATCH CARD ERROR: #your-matches container not available."
+        );
+
+        return;
+    }
+
 
     yourMatches.appendChild(
         matchCard
@@ -291,20 +416,32 @@ async function createMatchCard(match) {
                     "Cancelling...";
 
 
-                const {
-                    error
-                } = await db.rpc(
-                    "cancel_match",
-                    {
-                        challenge_id:
-                            match.id
+                try {
+
+                    const {
+                        error
+                    } = await db.rpc(
+                        "cancel_match",
+                        {
+                            challenge_id:
+                                match.id
+                        }
+                    );
+
+
+                    if (error) {
+                        throw error;
                     }
-                );
 
 
-                if (error) {
+                    await loadYourMatches();
 
-                    console.error(error);
+                } catch (error) {
+
+                    console.error(
+                        "CANCEL MATCH ERROR:",
+                        error
+                    );
 
 
                     cancelButton.disabled =
@@ -314,18 +451,18 @@ async function createMatchCard(match) {
                         "Cancel Match";
 
 
-                    cancelMessage.textContent =
-                        error.message;
+                    if (cancelMessage) {
 
-                    cancelMessage.className =
-                        "message error";
+                        cancelMessage.textContent =
+                            error.message ||
+                            "Unable to cancel this match.";
 
+                        cancelMessage.className =
+                            "message error";
 
-                    return;
+                    }
+
                 }
-
-
-                await loadYourMatches();
 
             }
         );
@@ -350,11 +487,40 @@ async function createMatchCard(match) {
                 "click",
                 async function () {
 
+                    // -----------------------------------------
+                    // PREVENT DOUBLE SUBMISSION
+                    // -----------------------------------------
+
+                    if (
+                        Array.from(
+                            winnerButtons
+                        ).some(
+                            btn => btn.disabled
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
                     const winnerTeamId =
                         button.dataset.teamId;
 
 
-                    // Disable both buttons while submitting
+                    if (!winnerTeamId) {
+
+                        console.error(
+                            "WINNER VOTE ERROR: Missing team ID."
+                        );
+
+                        return;
+                    }
+
+
+                    // -----------------------------------------
+                    // DISABLE BOTH BUTTONS
+                    // -----------------------------------------
 
                     winnerButtons.forEach(
                         btn => {
@@ -363,23 +529,12 @@ async function createMatchCard(match) {
                     );
 
 
+                    const originalButtonText =
+                        button.textContent.trim();
+
+
                     button.textContent =
                         "Submitting...";
-
-
-                    const {
-                        data,
-                        error
-                    } = await db.rpc(
-                        "submit_match_vote",
-                        {
-                            p_challenge_id:
-                                match.id,
-
-                            p_winner_team_id:
-                                winnerTeamId
-                        }
-                    );
 
 
                     const resultMessage =
@@ -388,9 +543,95 @@ async function createMatchCard(match) {
                         );
 
 
-                    if (error) {
+                    try {
 
-                        console.error(error);
+                        const {
+                            data,
+                            error
+                        } = await db.rpc(
+                            "submit_match_vote",
+                            {
+                                p_challenge_id:
+                                    match.id,
+
+                                p_winner_team_id:
+                                    winnerTeamId
+                            }
+                        );
+
+
+                        if (error) {
+                            throw error;
+                        }
+
+
+                        // -------------------------------------
+                        // BOTH TEAMS AGREED
+                        // -------------------------------------
+
+                        if (data === "completed") {
+
+                            await loadYourMatches();
+
+                            return;
+                        }
+
+
+                        // -------------------------------------
+                        // TEAMS DISAGREED
+                        // -------------------------------------
+
+                        if (data === "disputed") {
+
+                            await loadYourMatches();
+
+                            return;
+                        }
+
+
+                        // -------------------------------------
+                        // ONLY ONE TEAM HAS VOTED
+                        // -------------------------------------
+
+                        if (data === "waiting") {
+
+                            if (resultMessage) {
+
+                                resultMessage.textContent =
+                                    "Your vote has been recorded. Waiting for the other team.";
+
+                                resultMessage.className =
+                                    "message success";
+
+                            }
+
+
+                            // Keep buttons disabled because this
+                            // team has already submitted its vote.
+
+                            return;
+                        }
+
+
+                        // -------------------------------------
+                        // UNEXPECTED RPC RESULT
+                        // -------------------------------------
+
+                        console.warn(
+                            "Unexpected submit_match_vote response:",
+                            data
+                        );
+
+
+                        if (resultMessage) {
+
+                            resultMessage.textContent =
+                                "Your vote could not be confirmed. Please try again.";
+
+                            resultMessage.className =
+                                "message error";
+
+                        }
 
 
                         winnerButtons.forEach(
@@ -401,70 +642,35 @@ async function createMatchCard(match) {
 
 
                         button.textContent =
-                            button.dataset.teamId ===
-                            match.challenger_team_id
-                                ? (
-                                    teamOne?.name ||
-                                    "Team 1"
-                                )
-                                : (
-                                    teamTwo?.name ||
-                                    "Team 2"
-                                );
+                            originalButtonText;
+
+                    } catch (error) {
+
+                        console.error(
+                            "SUBMIT MATCH VOTE ERROR:",
+                            error
+                        );
+
+
+                        winnerButtons.forEach(
+                            btn => {
+                                btn.disabled = false;
+                            }
+                        );
+
+
+                        button.textContent =
+                            originalButtonText;
 
 
                         if (resultMessage) {
 
                             resultMessage.textContent =
-                                error.message;
+                                error.message ||
+                                "Unable to submit your vote.";
 
                             resultMessage.className =
                                 "message error";
-
-                        }
-
-
-                        return;
-                    }
-
-
-                    // =====================================
-                    // BOTH TEAMS AGREED
-                    // =====================================
-
-                    if (data === "completed") {
-
-                        await loadYourMatches();
-
-                        return;
-                    }
-
-
-                    // =====================================
-                    // TEAMS DISAGREED
-                    // =====================================
-
-                    if (data === "disputed") {
-
-                        await loadYourMatches();
-
-                        return;
-                    }
-
-
-                    // =====================================
-                    // ONLY ONE TEAM HAS VOTED
-                    // =====================================
-
-                    if (data === "waiting") {
-
-                        if (resultMessage) {
-
-                            resultMessage.textContent =
-                                "Your vote has been recorded. Waiting for the other team.";
-
-                            resultMessage.className =
-                                "message success";
 
                         }
 
@@ -500,20 +706,32 @@ async function createMatchCard(match) {
                     "OK...";
 
 
-                const {
-                    error
-                } = await db.rpc(
-                    "acknowledge_match_dispute",
-                    {
-                        p_challenge_id:
-                            match.id
+                try {
+
+                    const {
+                        error
+                    } = await db.rpc(
+                        "acknowledge_match_dispute",
+                        {
+                            p_challenge_id:
+                                match.id
+                        }
+                    );
+
+
+                    if (error) {
+                        throw error;
                     }
-                );
 
 
-                if (error) {
+                    await loadYourMatches();
 
-                    console.error(error);
+                } catch (error) {
+
+                    console.error(
+                        "ACKNOWLEDGE DISPUTE ERROR:",
+                        error
+                    );
 
 
                     resultOkButton.disabled =
@@ -524,24 +742,11 @@ async function createMatchCard(match) {
 
 
                     alert(
-                        error.message
+                        error.message ||
+                        "Unable to acknowledge the dispute."
                     );
 
-
-                    return;
                 }
-
-
-                /*
-                   IMPORTANT:
-
-                   Reload immediately.
-
-                   The other team does NOT need
-                   to click OK first.
-                */
-
-                await loadYourMatches();
 
             }
         );
