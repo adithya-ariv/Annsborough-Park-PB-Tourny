@@ -427,6 +427,63 @@ form button:hover {
     color: white;
 }
 
+/* =====================================================
+   DELETE ACCOUNT
+   ===================================================== */
+
+   .delete-account-section {
+    width: 100%;
+
+    margin-top: 25px;
+
+    padding: 25px;
+
+    background: #fff7ed;
+
+    border: 2px solid #f97316;
+}
+
+.delete-account-section h3 {
+    margin-top: 0;
+
+    color: #c2410c;
+
+    font-size: 22px;
+}
+
+.delete-account-section p {
+    margin-bottom: 20px;
+
+    color: #7c2d12;
+
+    line-height: 1.5;
+}
+
+.delete-account-button {
+    padding: 13px 22px;
+
+    background: #f97316;
+
+    border: none;
+
+    color: white;
+
+    font-size: 15px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.delete-account-button:hover {
+    background: #ea580c;
+}
+
+.delete-account-button:disabled {
+    opacity: 0.6;
+
+    cursor: not-allowed;
+}
 
 /* =====================================================
    TEAM

@@ -547,6 +547,102 @@ function escapeHTML(value) {
 
 }
 
+// =========================================================
+// DELETE ACCOUNT
+// =========================================================
+
+const deleteAccountButton =
+    document.getElementById("delete-account-button");
+
+const deleteAccountMessage =
+    document.getElementById("delete-account-message");
+
+
+if (deleteAccountButton) {
+
+    deleteAccountButton.addEventListener(
+        "click",
+        async function () {
+
+            const firstConfirmation =
+                confirm(
+                    "Are you sure you want to permanently delete your account?"
+                );
+
+
+            if (!firstConfirmation) {
+                return;
+            }
+
+
+            const secondConfirmation =
+                confirm(
+                    "WARNING: This will delete your account, remove you from your team, cancel your matches, and cannot be undone. Continue?"
+                );
+
+
+            if (!secondConfirmation) {
+                return;
+            }
+
+
+            deleteAccountButton.disabled =
+                true;
+
+            deleteAccountButton.textContent =
+                "Deleting...";
+
+
+            deleteAccountMessage.textContent =
+                "Deleting your account...";
+
+            deleteAccountMessage.className =
+                "message";
+
+
+            const {
+                data,
+                error
+            } = await db.rpc(
+                "delete_my_account"
+            );
+
+
+            if (error) {
+
+                console.error(error);
+
+                deleteAccountButton.disabled =
+                    false;
+
+                deleteAccountButton.textContent =
+                    "Delete Account";
+
+
+                deleteAccountMessage.textContent =
+                    error.message;
+
+                deleteAccountMessage.className =
+                    "message error";
+
+                return;
+            }
+
+
+            // Sign out locally
+
+            await db.auth.signOut();
+
+
+            // Send user to home page
+
+            window.location.href =
+                "index.html";
+
+        }
+    );
+
+}
 
 // =========================================================
 // START
