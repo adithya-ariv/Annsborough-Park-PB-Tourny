@@ -3,6 +3,10 @@
 // =========================================================
 
 
+// =========================================================
+// ELEMENTS
+// =========================================================
+
 const teamSelect =
     document.getElementById("team-select");
 
@@ -21,24 +25,15 @@ const challengeMessage =
 const incomingChallenges =
     document.getElementById("incoming-challenges");
 
-const stageOne =
-    document.getElementById("stage-one");
-
-const stageTwo =
-    document.getElementById("stage-two");
+const yourMatches =
+    document.getElementById("your-matches");
 
 const logoutButton =
     document.getElementById("logout-button");
 
-const cancelButton =
-    document.getElementById("cancel-match-button");
-
-const cancelMessage =
-    document.getElementById("cancel-message");
-
 
 // =========================================================
-// USER
+// VARIABLES
 // =========================================================
 
 let currentUser = null;
@@ -47,20 +42,22 @@ let currentTeamId = null;
 
 
 // =========================================================
-// LOAD PAGE
+// START PAGE
 // =========================================================
 
 async function loadChallengesPage() {
+
+    // Get logged-in user
 
     const {
         data: {
             user
         },
-        error
+        error: userError
     } = await db.auth.getUser();
 
 
-    if (error || !user) {
+    if (userError || !user) {
 
         window.location.href =
             "login.html";
@@ -86,44 +83,29 @@ async function loadChallengesPage() {
 
         console.error(teamError);
 
-        alert(teamError.message);
+        alert(
+            teamError.message
+        );
 
         return;
     }
 
 
-    currentTeamId = teamId;
+    currentTeamId =
+        teamId;
 
+
+    // User isn't on a team
 
     if (!currentTeamId) {
 
-        stageOne.innerHTML = `
-
-            <section class="card">
-
-                <h2>
-                    You need a team
-                </h2>
-
-                <p>
-                    You must be on a team before you can
-                    challenge or accept another team.
-                </p>
-
-                <a
-                    href="dashboard.html"
-                    class="button"
-                >
-                    Go to Dashboard
-                </a>
-
-            </section>
-
-        `;
+        showNoTeamMessage();
 
         return;
     }
 
+
+    // Set up page
 
     setDateMinimum();
 
@@ -131,19 +113,21 @@ async function loadChallengesPage() {
 
     await loadTeams();
 
-    await loadChallenges();
+    await loadIncomingChallenges();
 
-    await checkActiveMatch();
+    await loadYourMatches();
 
 
-    // Refresh every 10 seconds
+    // Refresh challenges and matches
+
+    // every 10 seconds
 
     setInterval(
-        async function() {
+        async function () {
 
-            await loadChallenges();
+            await loadIncomingChallenges();
 
-            await checkActiveMatch();
+            await loadYourMatches();
 
         },
         10000
@@ -153,7 +137,81 @@ async function loadChallengesPage() {
 
 
 // =========================================================
-// DATE MINIMUM
+// NO TEAM MESSAGE
+// =========================================================
+
+function showNoTeamMessage() {
+
+    teamSelect.innerHTML = `
+
+        <option value="">
+            You need a team first
+        </option>
+
+    `;
+
+
+    incomingChallenges.innerHTML = `
+
+        <div class="no-challenges">
+
+            <p>
+                You need to be on a team before
+                you can accept challenges.
+            </p>
+
+            <a
+                href="dashboard.html"
+                class="button"
+            >
+                Go to Dashboard
+            </a>
+
+        </div>
+
+    `;
+
+
+    yourMatches.innerHTML = `
+
+        <div class="no-challenges">
+
+            <p>
+                You are not currently on a team.
+            </p>
+
+        </div>
+
+    `;
+
+
+    const form =
+        document.getElementById(
+            "challenge-form"
+        );
+
+
+    form.innerHTML = `
+
+        <p>
+            You must create or join a team
+            before you can challenge another team.
+        </p>
+
+        <a
+            href="dashboard.html"
+            class="button"
+        >
+            Go to Dashboard
+        </a>
+
+    `;
+
+}
+
+
+// =========================================================
+// MINIMUM DATE
 // =========================================================
 
 function setDateMinimum() {
@@ -165,15 +223,23 @@ function setDateMinimum() {
     const year =
         today.getFullYear();
 
+
     const month =
         String(
             today.getMonth() + 1
-        ).padStart(2, "0");
+        ).padStart(
+            2,
+            "0"
+        );
+
 
     const day =
         String(
             today.getDate()
-        ).padStart(2, "0");
+        ).padStart(
+            2,
+            "0"
+        );
 
 
     const todayString =
@@ -205,7 +271,11 @@ function generateTimes() {
     `;
 
 
-    // 12:00 AM through 11:30 PM
+    // 12:00 AM
+    // 12:30 AM
+    // 1:00 AM
+    // ...
+    // 11:30 PM
 
     for (
         let hour = 0;
@@ -214,23 +284,45 @@ function generateTimes() {
     ) {
 
         for (
-            let minute of [0, 30]
+            const minute of [0, 30]
         ) {
 
+            const hourString =
+                String(hour)
+                    .padStart(
+                        2,
+                        "0"
+                    );
+
+
+            const minuteString =
+                String(minute)
+                    .padStart(
+                        2,
+                        "0"
+                    );
+
+
             const value =
-                `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
+                `${hourString}:${minuteString}:00`;
 
 
             const label =
-                formatTime(hour, minute);
+                formatTime(
+                    hour,
+                    minute
+                );
 
 
             const option =
-                document.createElement("option");
+                document.createElement(
+                    "option"
+                );
 
 
             option.value =
                 value;
+
 
             option.textContent =
                 label;
@@ -267,17 +359,22 @@ function formatTime(
 
 
     if (displayHour === 0) {
-        displayHour = 12;
+
+        displayHour =
+            12;
+
     }
 
 
-    return `${displayHour}:${String(minute).padStart(2, "0")}${suffix}`;
+    return (
+        `${displayHour}:${String(minute).padStart(2, "0")}${suffix}`
+    );
 
 }
 
 
 // =========================================================
-// LOAD TEAMS
+// LOAD ALL OTHER TEAMS
 // =========================================================
 
 async function loadTeams() {
@@ -287,9 +384,16 @@ async function loadTeams() {
         error
     } = await db
         .from("teams")
-        .select("id, name")
-        .neq("id", currentTeamId)
-        .order("name");
+        .select(
+            "id, name"
+        )
+        .neq(
+            "id",
+            currentTeamId
+        )
+        .order(
+            "name"
+        );
 
 
     if (error) {
@@ -321,11 +425,14 @@ async function loadTeams() {
         team => {
 
             const option =
-                document.createElement("option");
+                document.createElement(
+                    "option"
+                );
 
 
             option.value =
                 team.id;
+
 
             option.textContent =
                 team.name;
@@ -355,12 +462,12 @@ async function loadTeams() {
 
 
 // =========================================================
-// CREATE CHALLENGE
+// SEND CHALLENGE
 // =========================================================
 
 challengeForm.addEventListener(
     "submit",
-    async function(event) {
+    async function (event) {
 
         event.preventDefault();
 
@@ -368,15 +475,54 @@ challengeForm.addEventListener(
         const targetTeam =
             teamSelect.value;
 
+
         const selectedDate =
             matchDate.value;
+
 
         const selectedTime =
             matchTime.value;
 
 
+        if (!targetTeam) {
+
+            challengeMessage.textContent =
+                "Please select a team.";
+
+            challengeMessage.className =
+                "message error";
+
+            return;
+        }
+
+
+        if (!selectedDate) {
+
+            challengeMessage.textContent =
+                "Please select a date.";
+
+            challengeMessage.className =
+                "message error";
+
+            return;
+        }
+
+
+        if (!selectedTime) {
+
+            challengeMessage.textContent =
+                "Please select a time.";
+
+            challengeMessage.className =
+                "message error";
+
+            return;
+        }
+
+
         challengeMessage.textContent =
             "Sending challenge...";
+
 
         challengeMessage.className =
             "message";
@@ -403,18 +549,22 @@ challengeForm.addEventListener(
 
             console.error(error);
 
+
             challengeMessage.textContent =
                 error.message;
 
+
             challengeMessage.className =
                 "message error";
+
 
             return;
         }
 
 
         challengeMessage.textContent =
-            "Challenge sent!";
+            "Challenge sent successfully!";
+
 
         challengeMessage.className =
             "message success";
@@ -422,22 +572,30 @@ challengeForm.addEventListener(
 
         challengeForm.reset();
 
+
         setDateMinimum();
 
         generateTimes();
 
 
-        await loadChallenges();
+        await loadIncomingChallenges();
+
+        await loadYourMatches();
 
     }
 );
 
 
 // =========================================================
-// LOAD CHALLENGES
+// LOAD INCOMING CHALLENGES
 // =========================================================
 
-async function loadChallenges() {
+async function loadIncomingChallenges() {
+
+    if (!currentTeamId) {
+        return;
+    }
+
 
     const {
         data: challenges,
@@ -479,6 +637,7 @@ async function loadChallenges() {
 
         console.error(error);
 
+
         incomingChallenges.innerHTML = `
 
             <p class="message error">
@@ -486,6 +645,7 @@ async function loadChallenges() {
             </p>
 
         `;
+
 
         return;
     }
@@ -504,11 +664,13 @@ async function loadChallenges() {
 
         `;
 
+
         return;
     }
 
 
-    incomingChallenges.innerHTML = "";
+    incomingChallenges.innerHTML =
+        "";
 
 
     for (
@@ -522,7 +684,9 @@ async function loadChallenges() {
 
 
         const card =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
 
         card.className =
@@ -542,15 +706,21 @@ async function loadChallenges() {
                 </p>
 
                 <p>
+
                     <strong>
-                        ${formatDate(challenge.match_date)}
+                        ${formatDate(
+                            challenge.match_date
+                        )}
                     </strong>
 
                     at
 
                     <strong>
-                        ${formatDisplayTime(challenge.match_time)}
+                        ${formatDisplayTime(
+                            challenge.match_time
+                        )}
                     </strong>
+
                 </p>
 
             </div>
@@ -564,6 +734,7 @@ async function loadChallenges() {
                 >
                     Accept
                 </button>
+
 
                 <button
                     class="decline-button"
@@ -584,34 +755,48 @@ async function loadChallenges() {
     }
 
 
-    // Add button listeners
+    // Accept buttons
 
     document
-        .querySelectorAll(".accept-button")
+        .querySelectorAll(
+            ".accept-button"
+        )
         .forEach(
             button => {
 
                 button.addEventListener(
                     "click",
-                    () => acceptChallenge(
-                        button.dataset.id
-                    )
+                    async function () {
+
+                        await acceptChallenge(
+                            button.dataset.id
+                        );
+
+                    }
                 );
 
             }
         );
 
 
+    // Decline buttons
+
     document
-        .querySelectorAll(".decline-button")
+        .querySelectorAll(
+            ".decline-button"
+        )
         .forEach(
             button => {
 
                 button.addEventListener(
                     "click",
-                    () => declineChallenge(
-                        button.dataset.id
-                    )
+                    async function () {
+
+                        await declineChallenge(
+                            button.dataset.id
+                        );
+
+                    }
                 );
 
             }
@@ -621,7 +806,7 @@ async function loadChallenges() {
 
 
 // =========================================================
-// ACCEPT
+// ACCEPT CHALLENGE
 // =========================================================
 
 async function acceptChallenge(
@@ -641,23 +826,29 @@ async function acceptChallenge(
 
     if (error) {
 
-        alert(error.message);
+        alert(
+            error.message
+        );
 
-        await loadChallenges();
+
+        await loadIncomingChallenges();
+
+        await loadYourMatches();
+
 
         return;
     }
 
 
-    await checkActiveMatch();
+    await loadIncomingChallenges();
 
-    await loadChallenges();
+    await loadYourMatches();
 
 }
 
 
 // =========================================================
-// DECLINE
+// DECLINE CHALLENGE
 // =========================================================
 
 async function declineChallenge(
@@ -677,22 +868,30 @@ async function declineChallenge(
 
     if (error) {
 
-        alert(error.message);
+        alert(
+            error.message
+        );
+
 
         return;
     }
 
 
-    await loadChallenges();
+    await loadIncomingChallenges();
 
 }
 
 
 // =========================================================
-// CHECK ACTIVE MATCH
+// LOAD ALL YOUR MATCHES
 // =========================================================
 
-async function checkActiveMatch() {
+async function loadYourMatches() {
+
+    if (!currentTeamId) {
+        return;
+    }
+
 
     const {
         data: matches,
@@ -714,12 +913,33 @@ async function checkActiveMatch() {
         .or(
             `challenger_team_id.eq.${currentTeamId},challenged_team_id.eq.${currentTeamId}`
         )
-        .limit(1);
+        .order(
+            "match_date",
+            {
+                ascending: true
+            }
+        )
+        .order(
+            "match_time",
+            {
+                ascending: true
+            }
+        );
 
 
     if (error) {
 
         console.error(error);
+
+
+        yourMatches.innerHTML = `
+
+            <p class="message error">
+                ${escapeHTML(error.message)}
+            </p>
+
+        `;
+
 
         return;
     }
@@ -730,33 +950,45 @@ async function checkActiveMatch() {
         matches.length === 0
     ) {
 
-        showStageOne();
+        yourMatches.innerHTML = `
+
+            <p class="no-challenges">
+                You do not have any matches yet.
+            </p>
+
+        `;
+
 
         return;
     }
 
 
-    const match =
-        matches[0];
+    yourMatches.innerHTML =
+        "";
 
 
-    await displayMatch(
-        match
-    );
+    // Load every match
+
+    for (
+        const match of matches
+    ) {
+
+        await createMatchCard(
+            match
+        );
+
+    }
 
 }
 
 
 // =========================================================
-// DISPLAY MATCH
+// CREATE MATCH CARD
 // =========================================================
 
-async function displayMatch(
+async function createMatchCard(
     match
 ) {
-
-    showStageTwo();
-
 
     const teamOne =
         await getTeam(
@@ -770,130 +1002,227 @@ async function displayMatch(
         );
 
 
-    document
-        .getElementById(
-            "team-one-name"
-        )
-        .textContent =
-        teamOne.name;
-
-
-    document
-        .getElementById(
-            "team-two-name"
-        )
-        .textContent =
-        teamTwo.name;
-
-
-    document
-        .getElementById(
-            "team-one-players"
-        )
-        .innerHTML =
-        await getPlayersHTML(
+    const teamOnePlayers =
+        await getPlayers(
             match.challenger_team_id
         );
 
 
-    document
-        .getElementById(
-            "team-two-players"
-        )
-        .innerHTML =
-        await getPlayersHTML(
+    const teamTwoPlayers =
+        await getPlayers(
             match.challenged_team_id
         );
 
 
-    document
-        .getElementById(
-            "match-date-display"
-        )
-        .textContent =
-        formatDate(
-            match.match_date
+    const matchCard =
+        document.createElement(
+            "div"
         );
 
 
-    document
-        .getElementById(
-            "match-time-display"
-        )
-        .textContent =
-        formatDisplayTime(
-            match.match_time
+    matchCard.className =
+        "match-card";
+
+
+    matchCard.innerHTML = `
+
+        <div class="match-teams">
+
+
+            <!-- TEAM ONE -->
+
+            <div class="match-team">
+
+                <h3>
+                    ${escapeHTML(
+                        teamOne?.name ||
+                        "Unknown Team"
+                    )}
+                </h3>
+
+
+                <div class="match-players">
+
+                    ${teamOnePlayers}
+
+                </div>
+
+            </div>
+
+
+
+            <!-- VS -->
+
+            <div class="match-vs">
+                VS
+            </div>
+
+
+
+            <!-- TEAM TWO -->
+
+            <div class="match-team">
+
+                <h3>
+                    ${escapeHTML(
+                        teamTwo?.name ||
+                        "Unknown Team"
+                    )}
+                </h3>
+
+
+                <div class="match-players">
+
+                    ${teamTwoPlayers}
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- DATE / TIME -->
+
+        <div class="match-information">
+
+
+            <div>
+
+                <span>
+                    Match Date
+                </span>
+
+                <strong>
+                    ${formatDate(
+                        match.match_date
+                    )}
+                </strong>
+
+            </div>
+
+
+
+            <div>
+
+                <span>
+                    Match Time
+                </span>
+
+                <strong>
+                    ${formatDisplayTime(
+                        match.match_time
+                    )}
+                </strong>
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- CANCEL -->
+
+        <button
+            class="danger-button cancel-match-button"
+            data-id="${match.id}"
+        >
+            Cancel Match
+        </button>
+
+
+        <div
+            class="message cancel-message"
+        ></div>
+
+    `;
+
+
+    yourMatches.appendChild(
+        matchCard
+    );
+
+
+    const cancelButton =
+        matchCard.querySelector(
+            ".cancel-match-button"
         );
 
 
-    cancelButton.dataset.id =
-        match.id;
+    const cancelMessage =
+        matchCard.querySelector(
+            ".cancel-message"
+        );
 
-}
+
+    cancelButton.addEventListener(
+        "click",
+        async function () {
+
+            const confirmed =
+                confirm(
+                    "Are you sure you want to cancel this match?"
+                );
 
 
-// =========================================================
-// CANCEL MATCH
-// =========================================================
+            if (!confirmed) {
+                return;
+            }
 
-cancelButton.addEventListener(
-    "click",
-    async function() {
 
-        const confirmed =
-            confirm(
-                "Are you sure you want to cancel this match?"
+            cancelButton.disabled =
+                true;
+
+
+            cancelButton.textContent =
+                "Cancelling...";
+
+
+            const {
+                error
+            } = await db.rpc(
+                "cancel_match",
+                {
+                    challenge_id:
+                        match.id
+                }
             );
 
 
-        if (!confirmed) {
-            return;
-        }
+            if (error) {
+
+                console.error(error);
 
 
-        cancelMessage.textContent =
-            "Cancelling match...";
-
-        cancelMessage.className =
-            "message";
+                cancelButton.disabled =
+                    false;
 
 
-        const {
-            error
-        } = await db.rpc(
-            "cancel_match",
-            {
-                challenge_id:
-                    cancelButton.dataset.id
+                cancelButton.textContent =
+                    "Cancel Match";
+
+
+                cancelMessage.textContent =
+                    error.message;
+
+
+                cancelMessage.className =
+                    "message error";
+
+
+                return;
             }
-        );
 
 
-        if (error) {
+            await loadYourMatches();
 
-            cancelMessage.textContent =
-                error.message;
-
-            cancelMessage.className =
-                "message error";
-
-            return;
         }
+    );
 
-
-        cancelMessage.textContent =
-            "Match cancelled.";
-
-        cancelMessage.className =
-            "message success";
-
-
-        await checkActiveMatch();
-
-        await loadChallenges();
-
-    }
-);
+}
 
 
 // =========================================================
@@ -905,7 +1234,8 @@ async function getTeam(
 ) {
 
     const {
-        data: team
+        data: team,
+        error
     } = await db
         .from("teams")
         .select(
@@ -916,6 +1246,14 @@ async function getTeam(
             teamId
         )
         .single();
+
+
+    if (error) {
+
+        console.error(error);
+
+        return null;
+    }
 
 
     return team;
@@ -948,7 +1286,7 @@ async function getTeamName(
 // GET PLAYERS
 // =========================================================
 
-async function getPlayersHTML(
+async function getPlayers(
     teamId
 ) {
 
@@ -957,7 +1295,9 @@ async function getPlayersHTML(
         error
     } = await db
         .from("team_members")
-        .select("user_id")
+        .select(
+            "user_id"
+        )
         .eq(
             "team_id",
             teamId
@@ -965,6 +1305,8 @@ async function getPlayersHTML(
 
 
     if (error) {
+
+        console.error(error);
 
         return `
             <p>
@@ -989,14 +1331,16 @@ async function getPlayersHTML(
     }
 
 
-    const ids =
+    const userIds =
         members.map(
-            member => member.user_id
+            member =>
+                member.user_id
         );
 
 
     const {
-        data: profiles
+        data: profiles,
+        error: profileError
     } = await db
         .from("profiles")
         .select(
@@ -1004,8 +1348,23 @@ async function getPlayersHTML(
         )
         .in(
             "id",
-            ids
+            userIds
         );
+
+
+    if (profileError) {
+
+        console.error(
+            profileError
+        );
+
+        return `
+            <p>
+                Unable to load players
+            </p>
+        `;
+
+    }
 
 
     if (
@@ -1025,9 +1384,16 @@ async function getPlayersHTML(
     return profiles
         .map(
             profile => `
+
                 <div class="match-player">
-                    ${escapeHTML(profile.firstname)}
+
+                    ${escapeHTML(
+                        profile.firstname ||
+                        "Unknown"
+                    )}
+
                 </div>
+
             `
         )
         .join("");
@@ -1036,33 +1402,7 @@ async function getPlayersHTML(
 
 
 // =========================================================
-// STAGE SWITCHING
-// =========================================================
-
-function showStageOne() {
-
-    stageOne.style.display =
-        "block";
-
-    stageTwo.style.display =
-        "none";
-
-}
-
-
-function showStageTwo() {
-
-    stageOne.style.display =
-        "none";
-
-    stageTwo.style.display =
-        "block";
-
-}
-
-
-// =========================================================
-// DATE FORMATTING
+// FORMAT DATE
 // =========================================================
 
 function formatDate(
@@ -1089,7 +1429,7 @@ function formatDate(
 
 
 // =========================================================
-// TIME FORMATTING
+// FORMAT TIME
 // =========================================================
 
 function formatDisplayTime(
@@ -1101,10 +1441,15 @@ function formatDisplayTime(
 
 
     const hour =
-        Number(parts[0]);
+        Number(
+            parts[0]
+        );
+
 
     const minute =
-        Number(parts[1]);
+        Number(
+            parts[1]
+        );
 
 
     return formatTime(
@@ -1116,7 +1461,43 @@ function formatDisplayTime(
 
 
 // =========================================================
-// HTML ESCAPING
+// FORMAT TIME
+// =========================================================
+
+function formatTime(
+    hour,
+    minute
+) {
+
+    const suffix =
+        hour >= 12
+            ? "PM"
+            : "AM";
+
+
+    let displayHour =
+        hour % 12;
+
+
+    if (
+        displayHour === 0
+    ) {
+
+        displayHour =
+            12;
+
+    }
+
+
+    return (
+        `${displayHour}:${String(minute).padStart(2, "0")}${suffix}`
+    );
+
+}
+
+
+// =========================================================
+// ESCAPE HTML
 // =========================================================
 
 function escapeHTML(
@@ -1154,7 +1535,7 @@ function escapeHTML(
 
 logoutButton.addEventListener(
     "click",
-    async function() {
+    async function () {
 
         await db.auth.signOut();
 
