@@ -2042,7 +2042,8 @@ function escapeHTML(
 // =========================================================
 
 if (logoutButton) {
-        logoutButton.addEventListener(
+
+    logoutButton.addEventListener(
         "click",
         async function () {
 
@@ -2053,6 +2054,7 @@ if (logoutButton) {
 
         }
     );
+
 }
 
 
