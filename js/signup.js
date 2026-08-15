@@ -30,17 +30,22 @@ signupForm.addEventListener("submit", async function(event) {
         data,
         error
     } = await db.auth.signUp({
-
+    
         email: email,
-
+    
         password: password,
-
+    
         options: {
+    
+            emailRedirectTo:
+                "https://adithya-ariv.github.io/Annsborough-Park-PB-Tourny/dashboard.html",
+    
             data: {
                 firstname: firstname
             }
+    
         }
-
+    
     });
 
 
