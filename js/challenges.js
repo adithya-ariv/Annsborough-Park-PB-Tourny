@@ -120,19 +120,6 @@ async function loadChallengesPage() {
 
     // Refresh challenges and matches
 
-    // every 10 seconds
-
-    setInterval(
-        async function () {
-
-            await loadIncomingChallenges();
-
-            await loadYourMatches();
-
-        },
-        10000
-    );
-
 }
 
 
