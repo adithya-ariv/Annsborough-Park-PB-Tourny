@@ -7,7 +7,7 @@ signupForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
 
-    const firstName = document
+    const firstname = document
         .getElementById("firstName")
         .value
         .trim();
@@ -37,7 +37,7 @@ signupForm.addEventListener("submit", async function(event) {
 
         options: {
             data: {
-                firstName: firstName
+                firstname: firstname
             }
         }
 
