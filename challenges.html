@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Challenges</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+    <!-- =================================================
+         NAVBAR
+         ================================================= -->
+
+    <nav class="navbar">
+
+        <div class="nav-title">
+            Annsborough Park Pickleball Tournament
+        </div>
+
+
+        <div class="nav-links">
+            <a href="challenges.html">
+                Challenges
+            </a>
+
+            <a href="leaderboard.html">
+                Leaderboard
+            </a>
+            
+            <a href="dashboard.html">
+                Dashboard
+            </a>
+            
+            <button
+                id="logout-button"
+                class="nav-button"
+            >
+                Logout
+            </button>
+
+        </div>
+
+    </nav>
+
+
+
+    <!-- =================================================
+         MAIN
+         ================================================= -->
+
+    <main class="container">
+
+
+        <h1 class="page-title">
+            Challenges
+        </h1>
+
+
+        <!-- =================================================
+             STAGE 1
+             ================================================= -->
+
+        <div id="stage-one">
+
+
+            <!-- CHALLENGE A TEAM -->
+
+            <section class="card challenge-section">
+
+                <h2>
+                    Challenge a Team
+                </h2>
+
+                <p class="section-description">
+                    Choose a team, date, and time for your challenge.
+                </p>
+
+
+                <form id="challenge-form">
+
+
+                    <label for="team-select">
+                        Team You Want to Challenge
+                    </label>
+
+                    <select
+                        id="team-select"
+                        required
+                    >
+
+                        <option value="">
+                            Loading teams...
+                        </option>
+
+                    </select>
+
+
+                    <label for="match-date">
+                        Date
+                    </label>
+
+                    <input
+                        type="date"
+                        id="match-date"
+                        required
+                    >
+
+
+                    <label for="match-time">
+                        Time
+                    </label>
+
+                    <select
+                        id="match-time"
+                        required
+                    >
+
+                        <option value="">
+                            Select a time
+                        </option>
+
+                    </select>
+
+
+                    <button type="submit">
+                        Send Challenge
+                    </button>
+
+
+                    <div
+                        id="challenge-message"
+                        class="message"
+                    ></div>
+
+
+                </form>
+
+            </section>
+
+
+
+            <!-- ACCEPT CHALLENGES -->
+
+            <section class="card challenge-section">
+
+                <h2>
+                    Accept Challenges
+                </h2>
+
+
+                <div id="incoming-challenges">
+
+                    <p>
+                        Loading challenges...
+                    </p>
+
+                </div>
+
+            </section>
+
+
+        </div>
+
+
+
+        <!-- =================================================
+             STAGE 2
+             ================================================= -->
+
+        <div
+            id="stage-two"
+            style="display: none;"
+        >
+
+
+            <section class="card active-match">
+
+
+                <h2>
+                    Your Match
+                </h2>
+
+
+                <div class="match-teams">
+
+
+                    <!-- TEAM 1 -->
+
+                    <div class="match-team">
+
+                        <h3 id="team-one-name">
+                            Team 1
+                        </h3>
+
+
+                        <div
+                            id="team-one-players"
+                            class="match-players"
+                        ></div>
+
+                    </div>
+
+
+
+                    <!-- VS -->
+
+                    <div class="match-vs">
+                        VS
+                    </div>
+
+
+
+                    <!-- TEAM 2 -->
+
+                    <div class="match-team">
+
+                        <h3 id="team-two-name">
+                            Team 2
+                        </h3>
+
+
+                        <div
+                            id="team-two-players"
+                            class="match-players"
+                        ></div>
+
+                    </div>
+
+
+                </div>
+
+
+
+                <!-- DATE / TIME -->
+
+                <div class="match-information">
+
+                    <div>
+
+                        <span>
+                            Match Date
+                        </span>
+
+                        <strong id="match-date-display">
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            Match Time
+                        </span>
+
+                        <strong id="match-time-display">
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- CANCEL -->
+
+                <button
+                    id="cancel-match-button"
+                    class="danger-button"
+                >
+                    Cancel Match
+                </button>
+
+
+                <div
+                    id="cancel-message"
+                    class="message"
+                ></div>
+
+
+            </section>
+
+
+        </div>
+
+
+    </main>
+
+
+    <!-- SUPABASE -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="js/supabase.js"></script>
+
+    <script src="js/challenges.js"></script>
+
+
+</body>
+
+</html>

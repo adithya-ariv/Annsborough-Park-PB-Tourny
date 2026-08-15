@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+</head>
+
+<body>
+
+    <nav class="navbar">
+
+        <div class="nav-title">
+            Annsborough Park Pickleball Tournament
+        </div>
+
+
+        <div class="nav-links">
+
+            <a href="challenges.html">
+                Challenges
+            </a>
+
+            <a href="leaderboard.html">
+                Leaderboard
+            </a>
+            
+            <a href="dashboard.html">
+                Dashboard
+            </a>
+            
+            <button
+                id="logout-button"
+                class="nav-button"
+            >
+                Logout
+            </button>
+
+        </div>
+
+    </nav>
+
+
+    <main class="container">
+
+        <h1>
+            Dashboard
+        </h1>
+
+
+        <!-- ACCOUNT -->
+
+        <section class="card">
+
+            <h2>
+                Your Account
+            </h2>
+
+            <div class="account-info">
+
+                <p>
+                    <strong>First Name:</strong>
+
+                    <span id="firstname">
+                        Loading...
+                    </span>
+                </p>
+
+
+                <p>
+                    <strong>Email:</strong>
+
+                    <span id="email">
+                        Loading...
+                    </span>
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- TEAM -->
+
+        <section class="card">
+
+            <h2>
+                Your Team
+            </h2>
+
+
+            <div id="team-container">
+
+                Loading...
+
+            </div>
+
+        </section>
+
+
+        <!-- CREATE / JOIN -->
+
+        <div
+            id="team-actions"
+            class="team-actions"
+        >
+
+            <section class="card">
+
+                <h2>
+                    Create a Team
+                </h2>
+
+                <form id="create-team-form">
+
+                    <input
+                        type="text"
+                        id="team-name"
+                        placeholder="Team name"
+                        maxlength="50"
+                        required
+                    >
+
+                    <button type="submit">
+                        Create Team
+                    </button>
+
+                </form>
+
+
+                <div
+                    id="create-message"
+                    class="message"
+                ></div>
+
+            </section>
+
+
+            <section class="card">
+
+                <h2>
+                    Join a Team
+                </h2>
+
+                <form id="join-team-form">
+
+                    <input
+                        type="text"
+                        id="join-code"
+                        placeholder="Enter 6-character team code"
+                        maxlength="6"
+                        required
+                    >
+
+                    <button type="submit">
+                        Join Team
+                    </button>
+
+                </form>
+
+
+                <div
+                    id="join-message"
+                    class="message"
+                ></div>
+
+            </section>
+
+        </div>
+
+
+        <div
+            id="leave-container"
+            class="leave-container"
+        ></div>
+
+    </main>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="js/supabase.js"></script>
+
+    <script src="js/dashboard.js"></script>
+
+</body>
+
+</html>
