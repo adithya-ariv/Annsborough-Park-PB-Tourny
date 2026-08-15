@@ -1533,17 +1533,19 @@ function escapeHTML(
 // LOGOUT
 // =========================================================
 
-logoutButton.addEventListener(
-    "click",
-    async function () {
+if (logoutButton) {
+        logoutButton.addEventListener(
+        "click",
+        async function () {
 
-        await db.auth.signOut();
+            await db.auth.signOut();
 
-        window.location.href =
-            "index.html";
+            window.location.href =
+                "index.html";
 
-    }
-);
+        }
+    );
+}
 
 
 // =========================================================
