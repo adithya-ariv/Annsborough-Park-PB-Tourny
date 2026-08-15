@@ -1114,20 +1114,254 @@ async function createMatchCard(
         <!-- CANCEL -->
 
         <button
-            class="danger-button cancel-match-button"
-            data-id="${match.id}"
-        >
-            Cancel Match
-        </button>
-
-
+        class="danger-button cancel-match-button"
+        data-id="${match.id}"
+    >
+        Cancel Match
+    </button>
+    
+    
+    <div class="match-result-section">
+    
+        <h3>
+            Who won this match?
+        </h3>
+    
+    
+        <div class="winner-buttons">
+    
+            <button
+                class="team-one-winner"
+                data-match-id="${match.id}"
+                data-team-id="${match.challenger_team_id}"
+            >
+                ${escapeHTML(
+                    teamOne?.name ||
+                    "Team 1"
+                )}
+            </button>
+    
+    
+            <button
+                class="team-two-winner"
+                data-match-id="${match.id}"
+                data-team-id="${match.challenged_team_id}"
+            >
+                ${escapeHTML(
+                    teamTwo?.name ||
+                    "Team 2"
+                )}
+            </button>
+    
+        </div>
+    
+    
         <div
-            class="message cancel-message"
+            class="result-dispute"
+            style="display: none;"
+        >
+    
+            <span>
+                Both teams do not agree on the outcome.
+            </span>
+    
+            <button class="result-ok-button">
+                OK
+            </button>
+    
+        </div>
+    
+    
+        <div
+            class="message result-message"
         ></div>
+    
+    </div>
 
     `;
 
+    const winnerButtons =
+    matchCard.querySelectorAll(
+        ".team-one-winner, .team-two-winner"
+    );
 
+
+const disputeBox =
+    matchCard.querySelector(
+        ".result-dispute"
+    );
+
+
+const resultOkButton =
+    matchCard.querySelector(
+        ".result-ok-button"
+    );
+
+
+const resultMessage =
+    matchCard.querySelector(
+        ".result-message"
+    );
+
+
+winnerButtons.forEach(
+    button => {
+
+        button.addEventListener(
+            "click",
+            async function () {
+
+                const winnerTeamId =
+                    button.dataset.teamId;
+
+
+                winnerButtons.forEach(
+                    btn => {
+
+                        btn.disabled = true;
+
+                    }
+                );
+
+
+                button.textContent =
+                    "Submitting...";
+
+
+                const {
+                    data,
+                    error
+                } = await db.rpc(
+                    "submit_match_vote",
+                    {
+                        p_challenge_id:
+                            match.id,
+
+                        p_winner_team_id:
+                            winnerTeamId
+                    }
+                );
+
+
+                if (error) {
+
+                    console.error(error);
+
+
+                    winnerButtons.forEach(
+                        btn => {
+
+                            btn.disabled = false;
+
+                        }
+                    );
+
+
+                    button.textContent =
+                        button.dataset.teamId ===
+                        match.challenger_team_id
+                            ? teamOne.name
+                            : teamTwo.name;
+
+
+                    resultMessage.textContent =
+                        error.message;
+
+
+                    resultMessage.className =
+                        "message error";
+
+
+                    return;
+                }
+
+
+                // Both teams disagreed
+
+                if (data === "disputed") {
+
+                    winnerButtons.forEach(
+                        btn => {
+
+                            btn.style.display =
+                                "none";
+
+                        }
+                    );
+
+
+                    disputeBox.style.display =
+                        "flex";
+
+
+                    return;
+                }
+
+
+                // Waiting for the other team
+
+                if (data === "waiting") {
+
+                    resultMessage.textContent =
+                        "Your vote has been recorded. Waiting for the other team.";
+
+
+                    resultMessage.className =
+                        "message success";
+
+
+                    return;
+                }
+
+
+                // Match completed
+
+                if (data === "completed") {
+
+                    await loadYourMatches();
+
+                }
+
+            }
+        );
+
+    }
+);
+
+
+// =====================================================
+// DISPUTE OK BUTTON
+// =====================================================
+
+resultOkButton.addEventListener(
+    "click",
+    function () {
+
+        disputeBox.style.display =
+            "none";
+
+
+        winnerButtons.forEach(
+            button => {
+
+                button.style.display =
+                    "block";
+
+                button.disabled =
+                    false;
+
+            }
+        );
+
+
+        resultMessage.textContent =
+            "";
+
+        resultMessage.className =
+            "message";
+
+    }
+);
     yourMatches.appendChild(
         matchCard
     );

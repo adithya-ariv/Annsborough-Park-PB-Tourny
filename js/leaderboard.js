@@ -79,7 +79,7 @@ async function loadLeaderboard() {
             </div>
 
             <div>
-                Total Points
+                Total Wins
             </div>
 
         </div>
