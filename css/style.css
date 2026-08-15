@@ -694,46 +694,144 @@ form button:hover {
 
 
 /* =====================================================
-   ACCEPT / DECLINE
+   INCOMING CHALLENGES
+   ===================================================== */
+
+   .challenge-card {
+    width: 100%;
+
+    margin-bottom: 18px;
+
+    padding: 22px;
+
+    background: #0b6048;
+
+    border: 1px solid #168a68;
+}
+
+.challenge-card-content {
+    width: 100%;
+}
+
+.challenge-card h3 {
+    margin: 0 0 12px;
+
+    color: white;
+
+    font-size: 22px;
+}
+
+.challenge-card p {
+    margin: 7px 0;
+
+    color: #d1fae5;
+
+    line-height: 1.5;
+}
+
+
+/* =====================================================
+   ACCEPT / DECLINE BUTTONS
    ===================================================== */
 
 .challenge-actions {
     display: flex;
 
-    gap: 10px;
+    width: 100%;
 
-    flex-shrink: 0;
+    gap: 12px;
+
+    margin-top: 20px;
 }
 
-.accept-button,
-.decline-button {
+.accept-challenge-button,
+.decline-challenge-button {
+    flex: 1;
+
+    min-height: 46px;
+
     padding: 12px 20px;
 
     border: none;
 
     color: white;
 
+    font-family: inherit;
+
     font-size: 15px;
 
     font-weight: bold;
 
     cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        opacity 0.2s ease;
 }
 
-.accept-button {
+
+/* ACCEPT */
+
+.accept-challenge-button {
     background: #16a34a;
 }
 
-.accept-button:hover {
+.accept-challenge-button:hover {
     background: #15803d;
 }
 
-.decline-button {
+
+/* DECLINE */
+
+.decline-challenge-button {
     background: #c62828;
 }
 
-.decline-button:hover {
+.decline-challenge-button:hover {
     background: #a91f1f;
+}
+
+
+/* DISABLED */
+
+.accept-challenge-button:disabled,
+.decline-challenge-button:disabled {
+    opacity: 0.55;
+
+    cursor: not-allowed;
+}
+
+
+/* =====================================================
+   CHALLENGE ACTION MESSAGE
+   ===================================================== */
+
+.challenge-action-message {
+    width: 100%;
+
+    margin-top: 12px;
+}
+
+
+/* =====================================================
+   MOBILE
+   ===================================================== */
+
+@media (max-width: 600px) {
+
+    .challenge-actions {
+        flex-direction: column;
+
+        gap: 10px;
+    }
+
+    .accept-challenge-button,
+    .decline-challenge-button {
+        width: 100%;
+
+        min-height: 48px;
+    }
+
 }
 
 
@@ -1146,21 +1244,20 @@ form button:hover {
         font-size: 21px;
     }
 }
-
 /* =====================================================
    MATCH RESULT
    ===================================================== */
 
    .match-result-section {
-    margin-top: 25px;
+    width: 100%;
 
+    margin-top: 25px;
     padding-top: 25px;
 
     border-top: 1px solid #168a68;
 
     text-align: center;
 }
-
 
 .match-result-section h3 {
     margin: 0 0 18px;
@@ -1170,17 +1267,21 @@ form button:hover {
     font-size: 20px;
 }
 
-
 .winner-buttons {
     display: grid;
 
     grid-template-columns: 1fr 1fr;
 
     gap: 20px;
+
+    width: 100%;
 }
 
-
 .winner-buttons button {
+    width: 100%;
+
+    min-height: 50px;
+
     padding: 15px 20px;
 
     border: none;
@@ -1194,48 +1295,45 @@ form button:hover {
     cursor: pointer;
 }
 
-
 .team-one-winner {
     background: #ec4899;
 }
-
 
 .team-one-winner:hover {
     background: #db2777;
 }
 
-
 .team-two-winner {
     background: #7c3aed;
 }
-
 
 .team-two-winner:hover {
     background: #6d28d9;
 }
 
-
 .winner-buttons button:disabled {
-    opacity: 0.65;
+    opacity: 0.55;
 
     cursor: not-allowed;
 }
 
 
 /* =====================================================
-   DISPUTED RESULT
+   DISPUTE
    ===================================================== */
 
 .result-dispute {
+    width: 100%;
+
     display: flex;
 
     align-items: center;
 
     justify-content: space-between;
 
-    gap: 15px;
+    gap: 20px;
 
-    padding: 15px 20px;
+    padding: 18px 20px;
 
     background: #f97316;
 
@@ -1246,11 +1344,12 @@ form button:hover {
     text-align: left;
 }
 
-
 .result-ok-button {
     flex-shrink: 0;
 
-    padding: 10px 20px;
+    min-width: 80px;
+
+    padding: 11px 22px;
 
     border: none;
 
@@ -1258,14 +1357,21 @@ form button:hover {
 
     color: #c2410c;
 
+    font-size: 15px;
+
     font-weight: bold;
 
     cursor: pointer;
 }
 
-
 .result-ok-button:hover {
     background: #ffedd5;
+}
+
+.result-ok-button:disabled {
+    opacity: 0.7;
+
+    cursor: not-allowed;
 }
 
 
@@ -1277,8 +1383,9 @@ form button:hover {
 
     .winner-buttons {
         grid-template-columns: 1fr;
-    }
 
+        gap: 12px;
+    }
 
     .result-dispute {
         flex-direction: column;
@@ -1286,6 +1393,10 @@ form button:hover {
         align-items: stretch;
 
         text-align: center;
+    }
+
+    .result-ok-button {
+        width: 100%;
     }
 
 }
