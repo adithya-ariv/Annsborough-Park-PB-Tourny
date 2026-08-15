@@ -886,13 +886,21 @@ async function loadYourMatches() {
     } = await db
         .from("challenges")
         .select(`
-            id,
-            challenger_team_id,
-            challenged_team_id,
-            match_date,
-            match_time,
-            status
-        `)
+        id,
+        challenger_team_id,
+        challenged_team_id,
+        match_date,
+        match_time,
+        status,
+        challenger_vote,
+        challenged_vote,
+        result_disputed,
+        challenger_dispute_ack,
+        challenged_dispute_ack,
+        result_round,
+        challenger_vote_round,
+        challenged_vote_round
+    `)
         .eq(
             "status",
             "accepted"
@@ -1119,6 +1127,84 @@ async function createMatchCard(
     >
         Cancel Match
     </button>
+    
+    <div
+        class="message cancel-message"
+    ></div>
+    
+    
+    <div class="match-result-section">
+    
+        ${
+            match.result_disputed &&
+            !(
+                (
+                    match.challenger_dispute_ack &&
+                    currentTeamId ===
+                    match.challenger_team_id
+                )
+                ||
+                (
+                    match.challenged_dispute_ack &&
+                    currentTeamId ===
+                    match.challenged_team_id
+                )
+            )
+                ? `
+                    <div class="result-dispute">
+    
+                        <span>
+                            Both teams do not agree on the outcome.
+                        </span>
+    
+                        <button
+                            class="result-ok-button"
+                            data-id="${match.id}"
+                        >
+                            OK
+                        </button>
+    
+                    </div>
+                `
+                : `
+                    <h3>
+                        Who won this match?
+                    </h3>
+    
+                    <div class="winner-buttons">
+    
+                        <button
+                            class="team-one-winner"
+                            data-match-id="${match.id}"
+                            data-team-id="${match.challenger_team_id}"
+                        >
+                            ${escapeHTML(
+                                teamOne?.name ||
+                                "Team 1"
+                            )}
+                        </button>
+    
+    
+                        <button
+                            class="team-two-winner"
+                            data-match-id="${match.id}"
+                            data-team-id="${match.challenged_team_id}"
+                        >
+                            ${escapeHTML(
+                                teamTwo?.name ||
+                                "Team 2"
+                            )}
+                        </button>
+    
+                    </div>
+                `
+        }
+    
+        <div
+            class="message result-message"
+        ></div>
+    
+    </div>
     
     
     <div class="match-result-section">
@@ -1445,6 +1531,207 @@ resultOkButton.addEventListener(
 
 }
 
+// =========================================================
+// MATCH RESULT VOTING
+// =========================================================
+
+const winnerButtons =
+    matchCard.querySelectorAll(
+        ".team-one-winner, .team-two-winner"
+    );
+
+
+const resultOkButton =
+    matchCard.querySelector(
+        ".result-ok-button"
+    );
+
+
+// =========================================================
+// WINNER BUTTONS
+// =========================================================
+
+winnerButtons.forEach(
+    button => {
+
+        button.addEventListener(
+            "click",
+            async function () {
+
+                const winnerTeamId =
+                    button.dataset.teamId;
+
+
+                /*
+                   Prevent double clicking.
+                */
+
+                winnerButtons.forEach(
+                    btn => {
+                        btn.disabled = true;
+                    }
+                );
+
+
+                const {
+                    data,
+                    error
+                } = await db.rpc(
+                    "submit_match_vote",
+                    {
+                        p_challenge_id:
+                            match.id,
+
+                        p_winner_team_id:
+                            winnerTeamId
+                    }
+                );
+
+
+                if (error) {
+
+                    console.error(error);
+
+                    alert(
+                        error.message
+                    );
+
+
+                    winnerButtons.forEach(
+                        btn => {
+                            btn.disabled = false;
+                        }
+                    );
+
+
+                    return;
+                }
+
+
+                /*
+                   Both teams agreed.
+                */
+
+                if (
+                    data ===
+                    "completed"
+                ) {
+
+                    await loadYourMatches();
+
+                    return;
+
+                }
+
+
+                /*
+                   Teams disagreed.
+                   Reload the match so the
+                   orange message appears.
+                */
+
+                if (
+                    data ===
+                    "disputed"
+                ) {
+
+                    await loadYourMatches();
+
+                    return;
+
+                }
+
+
+                /*
+                   Only this team has voted.
+                   Keep their buttons disabled.
+                */
+
+                if (
+                    data ===
+                    "waiting"
+                ) {
+
+                    button.disabled =
+                        true;
+
+                }
+
+            }
+        );
+
+    }
+);
+
+
+// =========================================================
+// OK BUTTON
+// =========================================================
+
+if (resultOkButton) {
+
+    resultOkButton.addEventListener(
+        "click",
+        async function () {
+
+            resultOkButton.disabled =
+                true;
+
+
+            resultOkButton.textContent =
+                "OK...";
+
+
+            const {
+                data,
+                error
+            } = await db.rpc(
+                "acknowledge_match_dispute",
+                {
+                    p_challenge_id:
+                        match.id
+                }
+            );
+
+
+            if (error) {
+
+                console.error(error);
+
+                alert(
+                    error.message
+                );
+
+
+                resultOkButton.disabled =
+                    false;
+
+
+                resultOkButton.textContent =
+                    "OK";
+
+
+                return;
+
+            }
+
+
+            /*
+               Immediately reload this team's
+               match card.
+
+               The team's own vote was cleared,
+               so they can vote immediately.
+
+               We do NOT wait for the other team.
+            */
+
+            await loadYourMatches();
+
+        }
+    );
+
+}
 
 // =========================================================
 // GET TEAM
